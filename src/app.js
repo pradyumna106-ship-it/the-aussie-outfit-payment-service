@@ -8,15 +8,13 @@ app.use(cors({
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Content-Type"],
   credentials: true}));
-app.options('/api', cors());
+app.options('', cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true })); // for form
 app.use("/uploads", express.static("uploads"));
-app.get('/', (req, res) => {
-  res.status(200).json({ message: "API Connected Successfully" })
-})
+
 app.use(express.json());
 
-app.use("/api/payments", router);
+app.use("/", router);
 
 export default app;

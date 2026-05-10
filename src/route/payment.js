@@ -5,12 +5,15 @@ import express from "express";
 import {
   processPayment,
   getPaymentByOrderId,
-  updatePaymentStatus
+  updatePaymentStatus,
+  verifyPayment
 } from "../controller/payment.js";
 
 const router = express.Router();
 
 router.post("/process", processPayment);
+
+router.post("/verify", verifyPayment);
 
 router.get("/:orderId", getPaymentByOrderId);
 
