@@ -27,7 +27,7 @@ export const processPayment = async (req, res) => {
     let razorpayOrder = null;
     if (paymentMethod === "razorpay") {
         razorpayOrder = await razorpayInstance.orders.create({
-        amount: amount * 100,
+        amount: Number(amount) * 100,
         currency: req.body.currency || "INR",
         receipt: `receipt_${Date.now()}`
       });
@@ -51,7 +51,7 @@ export const processPayment = async (req, res) => {
         transactionId:  razorpayOrder ? razorpayOrder.id : null,
       }
     });
-    if (paymentMethod === "razorpay" && !razorpayOrder) {
+    if (paymentMethod !== "razorpay") {
       payment.status = "successful";
       payment.paidAt = new Date();
     }
@@ -66,7 +66,7 @@ export const processPayment = async (req, res) => {
     });
 
   } catch (error) {
-
+    console.error("Error processing payment:", error);
     return res.status(500).json({
       success: false,
       message: error.message
@@ -198,7 +198,7 @@ export const verifyPayment = async (req, res) => {
     });
 
   } catch (error) {
-
+    console.error("Error verifying payment:", error);
     return res.status(500).json({
       success: false,
       message: error.message
