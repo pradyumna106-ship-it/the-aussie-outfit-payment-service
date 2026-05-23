@@ -24,18 +24,20 @@ export const processPayment = async (req, res) => {
         message: "Required payment fields are missing"
       });
     }
-    const transactionId = `TXN-${Date.now()}`;
+    let razorpayOrder = null;
+    if (paymentMethod === "razorpay") {
+        razorpayOrder = await razorpayInstance.orders.create({
+        amount: amount * 100,
+        currency: req.body.currency || "INR",
+        receipt: `receipt_${Date.now()}`
+      });
+    }
 
-    const razorpayOrder = await razorpayInstance.orders.create({
-      amount: amount * 100,
-      currency: req.body.currency || "INR",
-      receipt: `receipt_${Date.now()}`
-    });
     const payment = await Payment.create({
       orderId,
       userId,
       paymentMethod,
-      transactionId,
+      transactionId: razorpayOrder ? razorpayOrder.id : null,
       amount,
       status: "processing"
     });
@@ -46,19 +48,21 @@ export const processPayment = async (req, res) => {
       status: "success",
       requestPayload: req.body,
       responsePayload: {
-        transactionId
+        transactionId:  razorpayOrder ? razorpayOrder.id : null,
       }
     });
-
-    payment.status = "successful";
-    payment.paidAt = new Date();
+    if (paymentMethod === "razorpay" && !razorpayOrder) {
+      payment.status = "successful";
+      payment.paidAt = new Date();
+    }
 
     await payment.save();
 
     return res.status(201).json({
       success: true,
       message: "Payment processed successfully",
-      data: payment
+      data: payment,
+      razorpayOrder
     });
 
   } catch (error) {

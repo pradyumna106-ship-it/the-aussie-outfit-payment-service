@@ -3,11 +3,7 @@
 import mongoose from "mongoose";
 
 const PAYMENT_METHODS = [
-  "card",
-  "upi",
-  "netBanking",
-  "wallet",
-  "cod"
+  "cash","razorpay"
 ];
 
 const PAYMENT_STATUS = [
@@ -41,7 +37,8 @@ const paymentSchema = new mongoose.Schema(
     transactionId: {
       type: String,
       unique: true,
-      required: true,
+      sparse: true,
+      default: null,
       trim: true,
       index: true
     },
