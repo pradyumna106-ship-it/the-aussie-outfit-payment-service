@@ -3,6 +3,8 @@
 import Payment from "../models/payment.js"
 import PaymentAttempt from "../models/paymentAttempt.js"
 import razorpayInstance from "../config/razorpay.js";
+import dotenv from "dotenv/config"
+import { createHmac } from "crypto";
 export const processPayment = async (req, res) => {
   try {
 
@@ -138,35 +140,89 @@ export const updatePaymentStatus = async (req, res) => {
 };
 
 export const verifyPayment = async (req, res) => {
+
   try {
 
     const {
       razorpay_order_id,
       razorpay_payment_id,
-      razorpay_signature
+      razorpay_signature,
+      status
     } = req.body;
 
-    const generatedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+    // FAILED PAYMENT
+    if (status === "failed") {
+
+      const payment = await Payment.findOneAndUpdate(
+        {
+          transactionId: razorpay_order_id
+        },
+        {
+          status: "failed"
+        },
+        {
+          new: true
+        }
+      );
+
+      return res.status(200).json({
+        success: false,
+        message: "Payment Failed",
+        data: payment
+      });
+    }
+
+    // CANCELLED PAYMENT
+    if (status === "cancelled") {
+
+      const payment = await Payment.findOneAndUpdate(
+        {
+          transactionId: razorpay_order_id
+        },
+        {
+          status: "cancelled"
+        },
+        {
+          new: true
+        }
+      );
+
+      return res.status(200).json({
+        success: false,
+        message: "Payment Cancelled",
+        data: payment
+      });
+    }
+
+    // SUCCESS PAYMENT SIGNATURE VERIFY
+    const generatedSignature = createHmac(
+        "sha256",
+        process.env.RAZORPAY_KEY_SECRET
+      )
       .update(
-        razorpay_order_id + "|" + razorpay_payment_id
+        `${razorpay_order_id}|${razorpay_payment_id}`
       )
       .digest("hex");
 
     if (generatedSignature !== razorpay_signature) {
+
       return res.status(400).json({
         success: false,
         message: "Invalid payment signature"
       });
     }
 
+    // UPDATE SUCCESS PAYMENT
     const payment = await Payment.findOneAndUpdate(
       {
         transactionId: razorpay_order_id
       },
       {
+
         status: "successful",
+
         paidAt: new Date(),
+
         gatewayResponse: {
           razorpay_payment_id,
           razorpay_signature
@@ -178,18 +234,12 @@ export const verifyPayment = async (req, res) => {
     );
 
     if (!payment) {
+
       return res.status(404).json({
         success: false,
         message: "Payment not found"
       });
     }
-
-    await PaymentAttempt.create({
-      paymentId: payment._id,
-      attemptNumber: 2,
-      status: "success",
-      responsePayload: req.body
-    });
 
     return res.status(200).json({
       success: true,
@@ -198,7 +248,12 @@ export const verifyPayment = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Error verifying payment:", error);
+
+    console.error(
+      "Error verifying payment:",
+      error
+    );
+
     return res.status(500).json({
       success: false,
       message: error.message

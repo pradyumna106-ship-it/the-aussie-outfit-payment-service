@@ -11,7 +11,8 @@ const PAYMENT_STATUS = [
   "processing",
   "successful",
   "failed",
-  "refunded"
+  "refunded",
+  "cancelled"
 ];
 
 const paymentSchema = new mongoose.Schema(
