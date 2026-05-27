@@ -12,7 +12,8 @@ export const processPayment = async (req, res) => {
       orderId,
       userId,
       paymentMethod,
-      amount
+      amount,
+      currency
     } = req.body;
 
     if (
@@ -39,6 +40,7 @@ export const processPayment = async (req, res) => {
       orderId,
       userId,
       paymentMethod,
+      currency,
       transactionId: razorpayOrder ? razorpayOrder.id : null,
       amount,
       status: "processing"
